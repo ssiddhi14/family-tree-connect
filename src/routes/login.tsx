@@ -9,6 +9,7 @@ import { FormField } from "@/components/FormField";
 import { AnimatedButton } from "@/components/AnimatedButton";
 import { loginSchema, type LoginInput } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
+import { tryAcceptPendingInvite } from "@/lib/invites";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Log in — Node_Family" }] }),
@@ -28,6 +29,9 @@ function Login() {
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Welcome back!");
+    const ref = await tryAcceptPendingInvite();
+    if (ref?.accepted) toast.success("Invite accepted 🌸");
+    else if (ref && !ref.accepted && ref.reason) toast.error(ref.reason);
     navigate({ to: "/dashboard" });
   };
 
