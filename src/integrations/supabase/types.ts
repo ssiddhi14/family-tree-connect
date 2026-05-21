@@ -14,6 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
+      invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          invitee_email: string | null
+          inviter_id: string
+          status: Database["public"]["Enums"]["invite_status"]
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          code: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_email?: string | null
+          inviter_id: string
+          status?: Database["public"]["Enums"]["invite_status"]
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_email?: string | null
+          inviter_id?: string
+          status?: Database["public"]["Enums"]["invite_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invites_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -23,6 +118,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          parent_id: string | null
           phone: string | null
           status: string
           updated_at: string
@@ -35,6 +131,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id: string
+          parent_id?: string | null
           phone?: string | null
           status?: string
           updated_at?: string
@@ -47,11 +144,20 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          parent_id?: string | null
           phone?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -79,6 +185,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: {
+        Args: { _code: string; _user_id: string }
+        Returns: Json
+      }
+      generate_invite_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -89,6 +200,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      invite_status: "pending" | "accepted" | "revoked" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -217,6 +329,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      invite_status: ["pending", "accepted", "revoked", "expired"],
     },
   },
 } as const
