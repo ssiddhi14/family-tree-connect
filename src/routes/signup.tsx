@@ -3,13 +3,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, X, Gift } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { FormField } from "@/components/FormField";
 import { AnimatedButton } from "@/components/AnimatedButton";
 import { signupSchema, type SignupInput, passwordChecks } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
+import { getPendingRef, rememberRef } from "@/lib/invites";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Sign up — Node_Family" }] }),
@@ -19,6 +20,16 @@ export const Route = createFileRoute("/signup")({
 function Signup() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [pendingRef, setPendingRef] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    const ref = url.searchParams.get("ref");
+    if (ref) rememberRef(ref);
+    setPendingRef(getPendingRef());
+  }, []);
+
   const { register, handleSubmit, watch, formState: { errors, dirtyFields } } = useForm<SignupInput>({
     resolver: zodResolver(signupSchema), mode: "onChange",
   });
@@ -46,6 +57,12 @@ function Signup() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="card-soft p-8">
           <h1 className="text-2xl font-bold text-center">Create your account</h1>
           <p className="mt-1 text-sm text-muted-foreground text-center">Start your tree in seconds.</p>
+          {pendingRef && (
+            <div className="mt-5 flex items-center gap-2 rounded-2xl bg-pink-soft px-4 py-3 text-sm text-navy">
+              <Gift size={16} className="shrink-0" />
+              <span>Joining with invite <span className="font-mono font-bold">{pendingRef}</span></span>
+            </div>
+          )}
           <form onSubmit={handleSubmit(onSubmit)} className="mt-7 space-y-4">
             <FormField label="Email" type="email" autoComplete="email" placeholder="you@email.com"
               error={errors.email?.message} success={!!dirtyFields.email && !errors.email} {...register("email")} />
