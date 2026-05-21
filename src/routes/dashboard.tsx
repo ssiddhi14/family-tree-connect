@@ -4,12 +4,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { Lock, LogOut, Upload, Send, CheckCircle2 } from "lucide-react";
+import { Lock, LogOut, Upload, CheckCircle2 } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { FormField } from "@/components/FormField";
 import { AnimatedButton } from "@/components/AnimatedButton";
 import { profileSchema, type ProfileInput } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
+import { InvitesPanel } from "@/components/InvitesPanel";
+import { NotificationBell } from "@/components/NotificationBell";
+import { tryAcceptPendingInvite } from "@/lib/invites";
 
 type Profile = {
   id: string;
@@ -55,6 +58,10 @@ function Dashboard() {
         reset({ full_name: data.full_name ?? "", phone: data.phone ?? "", address: data.address ?? "" });
       }
       setLoading(false);
+      // Accept any invite that was pending before signup/login
+      const ref = await tryAcceptPendingInvite();
+      if (ref?.accepted) toast.success("Invite accepted 🌸");
+      else if (ref && !ref.accepted && ref.reason) toast.error(ref.reason);
     })();
   }, [navigate, reset]);
 
@@ -137,26 +144,30 @@ function Dashboard() {
               </div>
             </div>
           </div>
-          <button onClick={logout} className="text-muted-foreground hover:text-navy transition" aria-label="Log out">
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell userId={profile.id} />
+            <button onClick={logout} className="p-2 rounded-full text-muted-foreground hover:text-navy hover:bg-pink-soft transition" aria-label="Log out">
+              <LogOut size={18} />
+            </button>
+          </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className={`card-soft p-6 flex items-center gap-4 ${isComplete ? "" : "opacity-70"}`}>
-          <div className={`h-12 w-12 rounded-2xl grid place-items-center ${isComplete ? "bg-pink text-navy" : "bg-muted text-muted-foreground"}`}>
-            {isComplete ? <Send size={20} /> : <Lock size={20} />}
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-navy">Invite your circle</h3>
-            <p className="text-sm text-muted-foreground">
-              {isComplete ? "Ready to send your first invite!" : "Unlocks once your profile is 100% complete."}
-            </p>
-          </div>
-          <AnimatedButton disabled={!isComplete} variant={isComplete ? "primary" : "ghost"}>
-            {isComplete ? "Coming next" : "Locked"}
-          </AnimatedButton>
-        </motion.div>
+        {isComplete ? (
+          <InvitesPanel userId={profile.id} />
+        ) : (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            className="card-soft p-6 flex items-center gap-4 opacity-80">
+            <div className="h-12 w-12 rounded-2xl bg-muted text-muted-foreground grid place-items-center">
+              <Lock size={20} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-navy">Invite your circle</h3>
+              <p className="text-sm text-muted-foreground">
+                Unlocks once your profile is 100% complete.
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         <motion.form onSubmit={handleSubmit(onSubmit)} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }} className="card-soft p-7 space-y-5">
